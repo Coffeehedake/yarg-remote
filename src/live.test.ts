@@ -92,10 +92,20 @@ describe.skipIf(!CONSOLE_URL)("against a live console", () => {
 
   // HttpListener gives no body on a DELETE, so this one has to be in the query.
   // If it were not, the server would answer 400 "a 'hash' is required".
+  //
+  // The `status !== 0` line is not padding. Red-proofed against a dead port,
+  // this case PASSED: an unreachable console is an ApiError whose status is 0,
+  // and 0 is not 400, so "not 400" was satisfied by there being no server at
+  // all. A test that a wrong answer and no answer both satisfy is measuring
+  // nothing. Same reason the choices case below insists on a real answer.
   it("reads the hash out of the query on DELETE /api/queue", async () => {
     const error = await client.remove(ABSENT).catch((caught: unknown) => caught);
     expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).status).not.toBe(0);
     expect((error as ApiError).status).not.toBe(400);
+    // 409 "not removable right now" is the merits; 404 "no such endpoint" would
+    // mean the route never matched.
+    expect((error as ApiError).message).not.toMatch(/endpoint/i);
   });
 
   it("routes ?on=queued to the queue vote rather than the suggestion vote", async () => {
@@ -112,6 +122,9 @@ describe.skipIf(!CONSOLE_URL)("against a live console", () => {
     for (const choice of ["next", "setlist"] as const) {
       const result: unknown = await client.decide(ABSENT, choice).catch((caught: unknown) => caught);
       if (result instanceof ApiError) {
+        // Not 0: an unreachable console must not satisfy this. See the DELETE
+        // case above — the same hole was there and was red-proofed out.
+        expect(result.status).not.toBe(0);
         expect(result.status).not.toBe(400);
       } else {
         expect((result as DecideResult).choice).toBe(choice);

@@ -41,17 +41,42 @@ and `src/types.ts` is a transcription of `RemoteQueueBridge.cs`, not a design of
   gitignored, so `NSAllowsLocalNetworking` and the Android network-security-config must be
   re-applied after a fresh clone. README, "Native setup", is the record.
 - **Verify by measuring.** A green `npm test` proves the client sends what we *think* the server
-  wants; it proves nothing about the server, because the stub is ours. The only thing that settles
-  the contract is driving a real console — the same standard the rest of the project holds to.
+  wants; it proves nothing about the server, because the stub is ours. `src/live.test.ts` is the
+  one that settles it, against a real console.
+
+## Running the contract test
+
+```powershell
+# 1. a real listener, from the fork. Win32_Process.Create, NOT Start-Process:
+#    a process started from a Cowork bridge call inherits a job object that
+#    kills Unity's Package Manager child, and the editor then dies claiming
+#    anti-virus. Quote the project path; the folder name has spaces.
+$cmd = '"C:\Program Files\Unity\Hub\Editor\6000.3.5f2\Editor\Unity.exe" -batchmode -nographics' +
+       ' -projectPath "C:\dev\YARG - Open Source Contributions\yarg"' +
+       ' -logFile "$env:TEMP\yarg-host.log"' +
+       ' -executeMethod Editor.RemoteQueueHost.RunLocal'
+Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $cmd }
+# wait for REMOTE_QUEUE_HOST_READY in the log (~100s from cold)
+
+# 2. drive it
+$env:YARG_CONSOLE = 'http://127.0.0.1:8099'; npx vitest run src/live.test.ts
+
+# 3. afterwards: Stop-Process -Name Unity, then in the fork
+#    git checkout -- ProjectSettings/ProjectSettings.asset
+```
+
+**Red-proof any change to it against a dead port**, not only against a live one. The first version
+of this file had two cases that passed with no server at all: they asserted `status !== 400`, and
+an unreachable console is `status 0`. A test that a wrong answer and *no answer* both satisfy is
+measuring nothing.
 
 ## What is NOT verified yet
 
 Written down rather than implied by a passing build:
 
-- **No run against a live console.** Every endpoint spelling here was read off the C# and asserted
-  against a stub. That catches a typo in our own code and nothing else.
 - **Nothing has been built for a device.** No `cap add` has been run; iOS and Android are untested,
   and the cleartext exceptions above are documented rather than applied.
 - **The two-queue routing** (setlist vs running show vs pending) is unexercised end to end. It is
-  also unexercised on the game side — batchmode has no menu scene — so "a queued song appears in
-  the setlist" is inference on both ends of the wire.
+  also unexercised on the game side — batchmode has no menu scene and no song library, so every
+  hash the contract test sends is deliberately unknown. "A queued song appears in the setlist" is
+  inference on both ends of the wire.
