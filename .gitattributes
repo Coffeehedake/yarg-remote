@@ -1,0 +1,18 @@
+# LF in the working tree on every machine, not just in the index.
+#
+# This repo is developed on Windows and built by CI on macOS and Linux. Without
+# this, files sit permanently "modified" with an EMPTY diff on the Windows
+# checkout, which is how the sibling yarg-song-server repo ended up stamping
+# `vcs.modified=true` into every binary it built - a difference that looks like a
+# toolchain problem and is not one. Same trap here: Capacitor hashes the web
+# assets it copies into the native projects, so a CRLF checkout and an LF one
+# produce different `dist/` bytes from one commit.
+#
+# `text=auto` still lets git detect genuinely binary content and leave it alone.
+* text=auto eol=lf
+
+# Native project scaffolding, once `cap add` has written it, contains Xcode and
+# Gradle files that tooling rewrites; they are gitignored, but if that ever
+# changes they are not ours to normalise.
+ios/** -text
+android/** -text

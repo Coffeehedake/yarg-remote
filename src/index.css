@@ -1,0 +1,319 @@
+/*
+ * The palette is the SAME one the in-game page uses
+ * (yarg/Assets/Script/Integration/RemoteQueue/RemoteQueuePage.cs). Deliberately:
+ * some people at a party will be on the built-in page from a browser and some on
+ * this app, looking at the same queue over each other's shoulders. Two different
+ * looks for one thing is a bug, not a brand.
+ *
+ * Dark only. A phone held up in a dim room during a rhythm game does not want a
+ * white screen, and there is no setting for it because nobody would find it.
+ */
+
+:root {
+  color-scheme: dark;
+  --bg: #12121a;
+  --card: #1d1d28;
+  --line: #2e2e3d;
+  --text: #f2f2f7;
+  --dim: #9a9aae;
+  --accent: #ffd23f;
+  --ok: #4ade80;
+  --no: #f87171;
+  --err: #ff9a9a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* viewport-fit=cover plus these keeps content clear of the notch and the home
+     indicator. Without them the tab bar sits under the gesture bar on iPhone. */
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  padding: 12px 14px 10px;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  letter-spacing: 0.02em;
+}
+
+h1 span {
+  color: var(--dim);
+  font-weight: 400;
+  font-size: 14px;
+}
+
+main {
+  padding: 10px 14px 28px;
+}
+
+input {
+  width: 100%;
+  padding: 12px 14px;
+  /* 16px exactly: anything smaller makes iOS Safari zoom the whole page on
+     focus, and it never zooms back. */
+  font-size: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--text);
+}
+
+input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.tabs button {
+  flex: 1;
+  padding: 9px 4px;
+  font-size: 13px;
+  border-radius: 9px;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--dim);
+}
+
+.tabs button[aria-selected="true"] {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sub {
+  color: var(--dim);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.len {
+  color: var(--dim);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pos {
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+  width: 1.6em;
+  text-align: right;
+}
+
+.now {
+  color: var(--accent);
+}
+
+button.act {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 9px;
+  /* 44px tall in practice: the smallest target a thumb reliably hits. */
+  padding: 11px 13px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+button.act:active {
+  transform: translateY(1px);
+}
+
+button.act[disabled] {
+  opacity: 0.5;
+}
+
+.votes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.votes button {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.score {
+  min-width: 1.9em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.score.up {
+  color: var(--ok);
+}
+
+.score.down {
+  color: var(--no);
+}
+
+.note {
+  color: var(--dim);
+  font-size: 13px;
+  padding: 12px 0;
+}
+
+.err {
+  color: var(--err);
+  padding: 10px 0;
+  font-size: 14px;
+}
+
+.stage {
+  font-size: 12px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.decide {
+  display: flex;
+  gap: 8px;
+  padding: 0 0 12px;
+}
+
+.decide button {
+  flex: 1;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  border-radius: 9px;
+  padding: 11px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.interm {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+  text-align: center;
+  padding: 9px;
+  border-radius: 9px;
+  margin-top: 9px;
+  font-size: 14px;
+}
+
+.interm.gone {
+  background: var(--card);
+  color: var(--dim);
+  font-weight: 400;
+}
+
+/* --- Connect screen -------------------------------------------------- */
+
+.connect {
+  padding: 28px 18px;
+  max-width: 460px;
+  margin: 0 auto;
+}
+
+.connect h2 {
+  font-size: 20px;
+  margin: 0 0 6px;
+}
+
+.connect p {
+  color: var(--dim);
+  font-size: 14px;
+  margin: 0 0 18px;
+}
+
+.connect button {
+  width: 100%;
+  margin-top: 12px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 13px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.connect button[disabled] {
+  opacity: 0.55;
+}
+
+.connect .secondary {
+  background: transparent;
+  color: var(--dim);
+  border-color: var(--line);
+  font-weight: 400;
+}
+
+.banner {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 9px 11px;
+  font-size: 13px;
+  color: var(--dim);
+  margin-bottom: 10px;
+}
+
+.banner.bad {
+  border-color: var(--err);
+  color: var(--err);
+}
