@@ -108,6 +108,25 @@ describe.skipIf(!CONSOLE_URL)("against a live console", () => {
     expect((error as ApiError).message).not.toMatch(/endpoint/i);
   });
 
+  // A move of a song the console does not hold. Found missing on 2026-10-30, when a
+  // real playtest showed that move's 409 blamed the song ("cannot be moved from where
+  // it is") in the one case where the cause was a closed menu. That case - a song that
+  // IS queued, with no music-library screen open - needs a real library, which a
+  // headless console does not have, so it cannot be reached from here; it was checked
+  // against a running game instead. What a headless console CAN prove is the other
+  // half: an unknown song is still a plain 409, with the original wording, and not
+  // the "waiting for the music library" message that would blame the wrong thing.
+  //
+  // The status is asserted exactly, not as "not 400": an unreachable console is
+  // status 0, which satisfies any "not" - see the DELETE case above.
+  it("refuses to move a song it does not hold, without blaming the music library", async () => {
+    const error = await client.move(ABSENT, true).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).status).toBe(409);
+    expect((error as ApiError).message).toMatch(/cannot be moved/i);
+    expect((error as ApiError).message).not.toMatch(/music library/i);
+  });
+
   it("routes ?on=queued to the queue vote rather than the suggestion vote", async () => {
     const error = await client.voteQueued(ABSENT, false).catch((caught: unknown) => caught);
     // The queued branch 404s on an unknown song; the suggestion branch answers
