@@ -49,10 +49,18 @@ export default function Suggestions({ client, suggestions, threshold, intermissi
     <>
       <Problem message={problem} />
 
+      {/*
+        This used to say "A song is playing ... nothing moves until the score screen". Both
+        halves were wrong whenever the game was merely sitting on a menu: the board has no
+        "a song is playing" field, only `intermission`, so `!intermission` also covers an idle
+        game - and a decided vote moved the song at once, with no score screen involved
+        (measured against a running game, 2026-10-30). What is established: votes count at
+        any time, and the vote window opening on the score screen is the design (see
+        RemoteQueueIntermission.cs). That is all this says.
+      */}
       {!intermission ? (
         <Note>
-          A song is playing. Votes still count, but nothing moves until the score screen -
-          that is the gap where the room decides.
+          Votes count at any time. The vote window opens on the score screen between songs.
         </Note>
       ) : null}
 
