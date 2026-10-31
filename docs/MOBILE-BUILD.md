@@ -1,8 +1,13 @@
 # Building the phone apps
 
-Written 2026-10-30, mid-task, so the reasoning survives a compaction. **Nothing in here has been run on
-Codemagic.** The repo-side files exist and are tested; everything that touches an outside account is
-still to do and is listed under "What has to exist first".
+Written 2026-10-30, mid-task, so the reasoning survives a compaction. It said "nothing in here has been run
+on Codemagic" until 2026-10-31, when it was.
+
+**STATUS 2026-10-31: the iOS pipeline WORKS end to end and TestFlight has a build.** `ios-testflight` ran
+green on its first attempt (build `6ae63b08f61b13a16adad68e`, all 19 steps) and App Store Connect confirms
+build `1793473364`, `processingState=VALID`, not expired, minOS 15.0 - checked against Apple's own API, not
+inferred from Codemagic's green upload step. **The `android` workflow has still never run**: it needs the
+keystore half of the variable group, which does not exist.
 
 ## The instruction, and what it settled
 
@@ -126,6 +131,16 @@ In order. Items 1-2 are Apple's side and are Jay's to do; the rest were done by 
    adhd-nagger's is hook 51. **Until it exists a push builds nothing; once it exists every push to main
    spends build minutes on both workflows** (the changeset filter skips docs-only pushes).
 5. First build: trigger through the API, expect to iterate.
+   **DONE 2026-10-31, and it did NOT need iterating.** `POST https://api.codemagic.io/builds` with
+   `{"appId":"6ae62d7b737e54b5b3f6b3bc","workflowId":"ios-testflight","branch":"main"}` and the `x-auth-token`
+   header -> build `6ae63b08f61b13a16adad68e`. All 19 steps green in about three minutes, 2 artifacts. It built
+   `origin/main` at `81682ff`, which is what Codemagic can see; local docs commits are irrelevant to it.
+   **Verified at Apple, not from the green step:** `GET /v1/builds?filter[app]=6829091050` returns build
+   `1793473364` (the epoch-seconds build number the yaml sets), `processingState=VALID`, `expired=false`,
+   minOS 15.0, uploaded 2026-10-31T12:05:13-07:00. Internal testers can install it now.
+   Two expectations that did NOT happen, recorded so nobody re-derives them: CocoaPods produced
+   `App.xcworkspace` and the build used it, so Capacitor 8's SPM default (nullpointer's note) did not apply
+   here; and the three-minute wall time is real, not a skipped build - Apple has the IPA.
 
 ## Pitfalls other people already paid for (adhd-nagger CLAUDE.md)
 
@@ -141,7 +156,12 @@ In order. Items 1-2 are Apple's side and are Jay's to do; the rest were done by 
 
 ## Still unverified, and open
 
-- The whole pipeline. In particular nothing has compiled this app in Xcode or Gradle.
+- ~~The whole pipeline.~~ The iOS half is now proven: Xcode compiled this app, produced an IPA, and Apple
+  accepted it (2026-10-31). **Gradle has still never compiled it** - the `android` workflow is untried and
+  cannot run until the keystore exists.
+- **Nobody has installed the TestFlight build on a phone.** A VALID build at Apple proves the pipeline, not
+  the app: the native HTTP stack, the cleartext exception, touch and layout are all still unexercised on a
+  device, and so is talking to the game.
 - **No app icon source** (`assets/icon-only.png`, 1024x1024 RGB, no alpha). The workflows skip icon
   generation when it is absent and ship Capacitor's placeholder. Do **not** use the upstream YARG logo.
 - The iOS bundle id / Apple-side naming, and whether to reuse `adhdnagger_signing`.
