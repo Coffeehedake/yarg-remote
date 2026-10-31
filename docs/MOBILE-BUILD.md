@@ -57,12 +57,14 @@ In order. Items 1-2 are Apple's side and are Jay's to do; the rest were done by 
      company app is `com.juniperdesign.*`, nothing used `com.fatalexception.*`. `capacitor.config.ts` and
      `codemagic.yaml` were changed from `com.fatalexception.yargremote` to match. Read-only discovery first showed
      neither candidate was registered and that three app records existed, none for this app.
-   - **STILL TO DO, Jay's, in the App Store Connect web UI: create the app record.** Apple has no API for it.
-     Apps -> "+" -> New App; platform iOS; a name ("YARG Remote" must be unique across the App Store - Apple says
-     so at once if taken; any name works for TestFlight); primary language; the bundle id above (it appears in
-     the dropdown now); a SKU (free text and permanent, e.g. `yarg-remote-1`). Leave the store page empty -
-     TestFlight needs only the record. NOTE: YARG is YARC's trademark; irrelevant for TestFlight, not for a
-     public release.
+   - **DONE 2026-10-30, by Jay in the App Store Connect web UI: the app record exists.** Apple has no API for
+     creating one. Name "YARG Remote", iOS, English (U.S.), bundle id above, SKU `yarg-remote-1` (permanent),
+     **ASC app id `6829091050`**. Confirmed afterwards through Apple's API (`GET /v1/apps`), not from the page.
+     The store page is empty on purpose - TestFlight needs only the record. NOTE: YARG is YARC's trademark;
+     irrelevant for TestFlight, not for a public release.
+   - The App Store Connect "Developer Program License Agreement updated" banner was showing earlier and was gone
+     by the time the form opened; Jay is the one who would have accepted it. It said existing apps could not be
+     updated until it was - worth remembering if a TestFlight upload ever fails for an unexplained reason.
 2. **Codemagic app** in Jay's personal account on the **generic git provider**, `settingsSource=file`,
    cloning GitLab project **57** (`fatalexception/yarg-remote`) with a **read-only GitLab deploy token**
    (adhd-nagger: project 64, token in 1Password `ADHD Nagger Codemagic Deploy Token`). Needs the 1Password
