@@ -52,16 +52,33 @@ def client() -> httpx.Client:
 def main() -> int:
     c = client()
 
-    # Do not send a second invitation to someone who already has one pending.
+    resend = "--resend" in sys.argv
+
+    # Do not send a second invitation to someone who already has one pending, unless asked:
+    # Apple allows only one live invitation per address, so a genuine resend means revoking
+    # the old one first. That is why --resend is explicit rather than the default.
     r = c.get(f"{BASE}/userInvitations", params={"limit": 50})
     if r.status_code == 200:
         pending = {u["attributes"]["email"].lower(): u for u in r.json()["data"]}
         print(f"pending invitations: {list(pending) if pending else 'none'}")
         if INVITEE["email"].lower() in pending:
-            a = pending[INVITEE["email"].lower()]["attributes"]
+            inv = pending[INVITEE["email"].lower()]
+            a = inv["attributes"]
             print(f"  ALREADY INVITED: roles={a.get('roles')} expires={a.get('expirationDate')}")
-            print("  not sending a second invitation")
-            return 0
+            if not resend:
+                print("  not sending a second invitation (pass --resend to revoke and resend)")
+                return 0
+            d = c.delete(f"{BASE}/userInvitations/{inv['id']}")
+            print(f"  DELETE old invitation: HTTP {d.status_code}")
+            if d.status_code not in (200, 204):
+                try:
+                    for e in d.json().get("errors", []):
+                        print(f"      {e.get('code')}: {e.get('title')}")
+                        print(f"      {e.get('detail','')[:300]}")
+                except Exception:
+                    print(f"      {d.text[:300]}")
+                print("  could not revoke the old invitation; leaving it in place")
+                return 3
     else:
         print(f"  GET /userInvitations -> HTTP {r.status_code}")
 
