@@ -123,9 +123,24 @@ In order. Items 1-2 are Apple's side and are Jay's to do; the rest were done by 
      none of the sources). So secrets in a variable group are safe from the Codemagic API in a way that a
      credential in `repositoryUrl` is not.
    - Android: a **new keystore** (`keytool` from JDK 21 is on this machine), base64 in the group, and a
-     copy in 1Password. **Losing it means phones cannot upgrade in place.** NOT DONE - this is the other half
-     of the group (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`), and the
-     `android` workflow cannot run until it exists. The `ios-testflight` workflow does not need it.
+     copy in 1Password. **Losing it means phones cannot upgrade in place.**
+     **DONE 2026-10-31. The group is now complete: 7 variables, all `secure`, all `yargremote_signing`.**
+     The keystore: PKCS12, alias `yargremote`, RSA 2048, SHA384withRSA, `CN=YARG Remote, O=FatalException, C=US`
+     (personal identity - nothing Juniper), valid until 2054-03-18, 2656 bytes. Made with keytool 21.0.11 and
+     `-storepass:env`/`-keypass:env`, so the password was never on a command line.
+     **Where it lives, and the order that matters.** The password was generated INTO 1Password first
+     (`op item create --generate-password='letters,digits,32'`, item `YARG Remote Android Keystore`, Home-Lab;
+     username field = the alias, password field = both the store and key password, which is what
+     `codemagic.yaml` assumes). Only then was the keystore made with it - so there was never a moment when a
+     keystore existed whose password was not already stored. Alphanumeric on purpose: this value is passed to
+     Gradle as `-Pandroid.injected.signing.*`.
+     The FILE is a 1Password **document**, `YARG Remote Android Keystore (jks)`, uploaded with
+     `op document create` (not a base64 field, so its contents never reached a command line). It was downloaded
+     again and compared: **byte-identical, sha256 `5da049327f4d...`**. `ANDROID_KEYSTORE_BASE64` was checked to
+     decode back to exactly those bytes before being sent. The local copy was then deleted; 1Password holds the
+     only copy, which is the point.
+     **If it is ever needed again:** `op document get "YARG Remote Android Keystore (jks)" --vault Home-Lab
+     --out-file <path>`. Do not commit a `.jks` or that password, ever.
 4. **GitLab webhook** on project 57 -> `https://api.codemagic.io/hooks/<app id>` (push, tag push, merge
    request; SSL verification on). Needs the api-scoped token in 1Password `GitLab-CE (Personal)`.
    adhd-nagger's is hook 51. **Until it exists a push builds nothing; once it exists every push to main
