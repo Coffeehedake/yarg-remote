@@ -105,8 +105,22 @@ In order. Items 1-2 are Apple's side and are Jay's to do; the rest were done by 
      `4U4VWS2CD9`) and `CERTIFICATE_PRIVATE_KEY` (1Password `NullPointer iOS Signing Cert Key`). Reuse is
      deliberate - a second key mints a second Apple Distribution certificate against the 2-cert limit.
      (Open question: whether the existing `adhdnagger_signing` group can simply be referenced instead.)
+     **DONE 2026-10-31: the iOS half of the group exists.** Four variables created with
+     `POST https://api.codemagic.io/apps/6ae62d7b737e54b5b3f6b3bc/variables`,
+     body `{key, value, group: "yargremote_signing", secure: true}`, values read from 1Password in-process and
+     never printed: `APP_STORE_CONNECT_ISSUER_ID` (36, uuid-shaped), `APP_STORE_CONNECT_KEY_IDENTIFIER` (10),
+     `APP_STORE_CONNECT_PRIVATE_KEY` (257, PEM), `CERTIFICATE_PRIVATE_KEY` (1703, PEM). Each was length- and
+     shape-checked before being sent, and refused if it carried a carriage return - CRLF contamination has
+     corrupted a credential on this machine before. `GET /apps/<id>/variables` afterwards shows exactly one of
+     each, `group=yargremote_signing`, `secure=true`.
+     **Measured, and the opposite of the repository-URL behaviour: a `secure` variable is NOT readable back
+     through the API.** All four return the same 8-character mask (identical sha256 across all four, matching
+     none of the sources). So secrets in a variable group are safe from the Codemagic API in a way that a
+     credential in `repositoryUrl` is not.
    - Android: a **new keystore** (`keytool` from JDK 21 is on this machine), base64 in the group, and a
-     copy in 1Password. **Losing it means phones cannot upgrade in place.**
+     copy in 1Password. **Losing it means phones cannot upgrade in place.** NOT DONE - this is the other half
+     of the group (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`), and the
+     `android` workflow cannot run until it exists. The `ios-testflight` workflow does not need it.
 4. **GitLab webhook** on project 57 -> `https://api.codemagic.io/hooks/<app id>` (push, tag push, merge
    request; SSL verification on). Needs the api-scoped token in 1Password `GitLab-CE (Personal)`.
    adhd-nagger's is hook 51. **Until it exists a push builds nothing; once it exists every push to main
