@@ -140,9 +140,13 @@ workflows:
 
   android:
     name: YARG Remote Android - APK
-    # ShopStack's android workflow runs on a Mac; nothing here needs one, and Linux is the
-    # ordinary (and cheaper) choice. Unverified until it runs.
-    instance_type: linux_x2
+    # MEASURED 2026-10-31: linux_x2 is NOT available on this Codemagic plan. The first android
+    # build (6ae64541bcc5b55f67f22832) failed in under a second, before a single step ran, with
+    # "The selected instance type is not available with the current billing plan." This file used
+    # to argue that Linux was the ordinary, cheaper choice and that ShopStack only used a Mac out
+    # of habit. ShopStack was right by accident or by experience, and the reasoning here was
+    # wrong: on this account a Mac instance is not the expensive option, it is the only one.
+    instance_type: mac_mini_m2
     max_build_duration: 45
     triggering:
       events:

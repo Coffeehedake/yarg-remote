@@ -156,6 +156,17 @@ In order. Items 1-2 are Apple's side and are Jay's to do; the rest were done by 
    Two expectations that did NOT happen, recorded so nobody re-derives them: CocoaPods produced
    `App.xcworkspace` and the build used it, so Capacitor 8's SPM default (nullpointer's note) did not apply
    here; and the three-minute wall time is real, not a skipped build - Apple has the IPA.
+   **The `android` workflow was then tried and FAILED INSTANTLY (build `6ae64541bcc5b55f67f22832`,
+   2026-10-31): "The selected instance type is not available with the current billing plan."** Zero steps ran,
+   zero artifacts, under a second. The cause was in this repo, not in the keystore or the variables: the
+   workflow asked for `instance_type: linux_x2`, and this Codemagic plan does not include Linux instances.
+   ShopStack's android workflow has always used `mac_mini_m2`; a comment in our `codemagic.yaml` dismissed that
+   as habit and called Linux "the ordinary (and cheaper) choice". It was wrong - on this account a Mac instance
+   is not the expensive option, it is the only one. Fixed to `mac_mini_m2`.
+   **That fix cannot be tested until it is pushed.** Codemagic clones `origin/main`, so a `codemagic.yaml`
+   change sitting in a local commit changes nothing about what builds. This is the first thing in this project
+   that actually requires a push rather than merely deserving one.
+   **The keystore is therefore still unproven.** Nothing was signed, because nothing was built.
 
 ## Pitfalls other people already paid for (adhd-nagger CLAUDE.md)
 
