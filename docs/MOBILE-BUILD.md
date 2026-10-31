@@ -223,11 +223,20 @@ In order. Items 1-2 are Apple's side and are Jay's to do; the rest were done by 
 - ~~The whole pipeline.~~ **BOTH halves are now proven (2026-10-31).** Xcode compiled this app, produced an
   IPA and Apple accepted it; Gradle compiled it and produced a release APK signed with our own keystore,
   verified from the APK's own certificate rather than from a green step.
-- **No push has yet gone through hook 52.** It was created and read back from GitLab's own API, so the hook
-  is as configured; what is untested is the end of the wire - that Codemagic accepts the delivery and starts
-  a build. The next push to `main` is the test, and it is not a free one: it spends minutes on both workflows
-  and uploads to TestFlight. GitLab records every delivery and its response under the project's Webhooks
-  page, which is where to look if a push seems to build nothing.
+- ~~No push has yet gone through hook 52.~~ **The hook is PROVEN end to end (2026-10-31, 18:06 ET).** Pushing
+  `ee34f88..de19944` produced a GitLab delivery logged **HTTP 202** and two Codemagic builds within seconds,
+  with no API call from here.
+  **And the changeset filter behaved exactly as this file claims**, which had never been watched before:
+  iOS (`6ae666856a1999f83b5c6eff`) ran all 19 steps and uploaded to TestFlight, while Android
+  (`6ae666856a1999f83b5c6f00`) came back **`status=skipped`** - "Preparing build machine" and "Fetching app
+  sources" succeeded, every real step skipped, 0 artifacts.
+  That asymmetry is the filter working, not failing: **it diffs against the last SUCCESSFUL build of that
+  workflow, not against the previous commit.** iOS last succeeded at `81682ff`, and `ee34f88` changed
+  `codemagic.yaml` (always in the changeset) in between, so iOS had a real change to build. Android last
+  succeeded at `ee34f88`, and `ee34f88..de19944` is documentation only, so it had nothing. Expect a docs-only
+  push to skip **only** for workflows that have succeeded since the last code change.
+  GitLab records every delivery and its response under the project's Webhooks page, which is where to look if
+  a push seems to build nothing.
 - **Nobody has installed the TestFlight build on a phone.** A VALID build at Apple proves the pipeline, not
   the app: the native HTTP stack, the cleartext exception, touch and layout are all still unexercised on a
   device, and so is talking to the game.
