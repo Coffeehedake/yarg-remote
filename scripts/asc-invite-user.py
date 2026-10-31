@@ -65,6 +65,12 @@ def main() -> int:
             inv = pending[INVITEE["email"].lower()]
             a = inv["attributes"]
             print(f"  ALREADY INVITED: roles={a.get('roles')} expires={a.get('expirationDate')}")
+            print(f"    allAppsVisible={a.get('allAppsVisible')}  "
+                  f"provisioningAllowed={a.get('provisioningAllowed')}")
+            v = c.get(f"{BASE}/userInvitations/{inv['id']}/visibleApps", params={"limit": 20})
+            if v.status_code == 200:
+                names = [x["attributes"].get("name") for x in v.json()["data"]]
+                print(f"    visibleApps={names if names else 'NONE LISTED'}")
             if not resend:
                 print("  not sending a second invitation (pass --resend to revoke and resend)")
                 return 0
