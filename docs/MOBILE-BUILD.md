@@ -69,6 +69,16 @@ In order. Items 1-2 are Apple's side and are Jay's to do; the rest were done by 
    cloning GitLab project **57** (`fatalexception/yarg-remote`) with a **read-only GitLab deploy token**
    (adhd-nagger: project 64, token in 1Password `ADHD Nagger Codemagic Deploy Token`). Needs the 1Password
    item `CodeMagic API Token`.
+   **Step 2 findings (2026-10-30, read-only `GET /apps`, secrets redacted):** the three existing apps are registered
+   three ways. adhd-nagger (API, `POST /apps`): `provider=generic`, and the raw `repository.htmlUrl` **embeds a GitLab
+   deploy token**, with the auth fields empty. nullpointer (UI): `generic`, clean URL, separate auth (`username=codemagic-ci`,
+   `isAuthenticationEnabled=true`). shopstack-mobile: `provider=github`, no credentials. All three have
+   `settingsSource=file`. **Codemagic's `GET /apps` returns an embedded token in clear**, so anyone holding the Codemagic
+   API token can read adhd-nagger's. Options for this repo: (1) the PUBLIC GitHub mirror, no credential - but the mirror
+   can lag a push, so trigger builds by API after checking `git ls-remote` matches rather than trusting a webhook;
+   (2) a token in the URL via the API (readable afterwards); (3) a token in separate auth fields via the Codemagic UI
+   (Jay pastes it). The documented `POST /apps` takes only `repositoryUrl` (+ optional `teamId`); credentials for a
+   private HTTPS repo are not documented there. Nothing has been created for step 2 yet.
 3. **Variable group `yargremote_signing`**, created through the Codemagic API from 1Password values
    **without printing them**, stored `secure`:
    - iOS: the personal team's ASC key (1Password `nullpointer - App Store Connect API (manager)`, key id
