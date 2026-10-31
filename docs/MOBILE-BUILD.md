@@ -78,7 +78,27 @@ In order. Items 1-2 are Apple's side and are Jay's to do; the rest were done by 
    can lag a push, so trigger builds by API after checking `git ls-remote` matches rather than trusting a webhook;
    (2) a token in the URL via the API (readable afterwards); (3) a token in separate auth fields via the Codemagic UI
    (Jay pastes it). The documented `POST /apps` takes only `repositoryUrl` (+ optional `teamId`); credentials for a
-   private HTTPS repo are not documented there. Nothing has been created for step 2 yet.
+   private HTTPS repo are not documented there.
+   **DONE 2026-10-31, by Jay in the Codemagic UI (option 3): the app exists. App id `6ae62d7b737e54b5b3f6b3bc`.**
+   Verified afterwards with a read-only `GET /apps` that printed only whitelisted fields: `provider=generic`,
+   `settingsSource=file`, `projectType=ionic`, `repository.username=codemagic-ci`, `isAuthenticationEnabled=true`,
+   the URL carries no credentials, and the app's JSON contains no `gldt-` and no `glpat-`. Codemagic can read the
+   repo - its settings page renders this repo's own `codemagic.yaml`. `ionic` was chosen because Capacitor is
+   Ionic's tooling and `Other` demands a free-text answer; with `settingsSource=file` the project type only picks
+   which editor template the UI offers, so it is cosmetic.
+   **Two things cost a round trip each.** (a) The first submit failed with `remote: HTTP Basic: Access denied`.
+   The deploy token was NOT at fault - `git ls-remote` with it returned `main` at `81682ff` - but the Password
+   field held a 14-character value that did not start with `gldt-`, almost certainly the 1Password browser
+   extension autofilling a saved password into a field labelled "Password". The token is 25 chars and starts
+   `gldt-`, so measure the field's LENGTH before submitting (`input[type=password].value.length`) rather than
+   trusting the dots. (b) The wizard dialog closes on a stray click or Escape and silently discards everything
+   typed into it, with no warning and nothing created.
+   **A third finding, about adhd-nagger rather than this repo:** on 2026-10-31 the Codemagic apps page raised an
+   unprompted success toast reading ``Successfully connected to https://codemagic-ci:<TOKEN>@gitlab.badassium.com/
+   fatalexception/adhd-nagger.git`` with the deploy token **in clear text**. So a URL-embedded token leaks through
+   the web UI as well as through `GET /apps` - the case for option 3, now measured twice and in two places. Sent
+   to the live adhd-nagger session over Arbiter; that repo's registration is its own to fix, and rotating its
+   token is Jay's call.
 3. **Variable group `yargremote_signing`**, created through the Codemagic API from 1Password values
    **without printing them**, stored `secure`:
    - iOS: the personal team's ASC key (1Password `nullpointer - App Store Connect API (manager)`, key id
