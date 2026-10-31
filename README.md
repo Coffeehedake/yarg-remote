@@ -49,28 +49,31 @@ npm test                    # vitest
 
 ### Native
 
+The shipped apps are built by **Codemagic**, the same way as ShopStack Mobile and the ADHD nagger: see
+[`docs/MOBILE-BUILD.md`](docs/MOBILE-BUILD.md) and [`codemagic.yaml`](codemagic.yaml). Locally, for a look:
+
 ```bash
-npx cap add ios
+npx cap add ios            # macOS only to build; the folder generates anywhere
 npx cap add android
 npm run build && npx cap sync
-npm run ios        # opens Xcode
-npm run android    # opens Android Studio
+python scripts/native_setup.py ios        # re-applies the native edits below
+python scripts/native_setup.py android
 ```
 
-#### Native setup, applied after `cap add`
+#### Native setup, applied by `scripts/native_setup.py` after `cap add`
 
 **A console on a home LAN has no certificate, so both platforms need a cleartext
-exception.** This is not a shortcut around HTTPS; there is nothing to get a
-certificate *for* — the address is an RFC1918 or CGNAT IP that changes per party.
+exception.** There is nothing to get a certificate *for*: the address is an RFC1918 or CGNAT IP that
+changes per party.
 
-- **iOS** — in `ios/App/App/Info.plist`, under `NSAppTransportSecurity`, set
-  `NSAllowsLocalNetworking` to `true`. This permits cleartext to local addresses
-  only, which is narrower than `NSAllowsArbitraryLoads` and is the correct one
-  here. iOS 14+ also shows a local-network permission prompt on first use, so set
-  `NSLocalNetworkUsageDescription` to something a person can act on.
-- **Android** — add a `network-security-config` permitting cleartext to private
-  ranges and reference it from `AndroidManifest.xml`. `usesCleartextTraffic=true`
-  across the whole app is the lazier option and is not what we want.
+- **iOS** - `NSAllowsLocalNetworking` (cleartext to local addresses only, narrower than
+  `NSAllowsArbitraryLoads`), `NSLocalNetworkUsageDescription` (iOS 14+ prompts before local-network use) and
+  `ITSAppUsesNonExemptEncryption=false`.
+- **Android** - a `network-security-config` permitting cleartext, referenced from `AndroidManifest.xml`.
+  **It is app-wide, not private-range only:** Android's network-security-config matches hostnames, not CIDR
+  ranges, and the user types an arbitrary LAN IP, so a private-range allowance cannot be written. That is
+  equivalent to `usesCleartextTraffic=true`; what keeps it acceptable is that the app only talks to the address
+  the user typed. (Earlier text here said "private ranges"; that was not implementable.)
 
 `ios/` and `android/` are gitignored: they are generated, and regenerating them
 is a `cap add` away. The consequence is that the two edits above must be
