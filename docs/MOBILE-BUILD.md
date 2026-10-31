@@ -163,10 +163,27 @@ In order. Items 1-2 are Apple's side and are Jay's to do; the rest were done by 
    ShopStack's android workflow has always used `mac_mini_m2`; a comment in our `codemagic.yaml` dismissed that
    as habit and called Linux "the ordinary (and cheaper) choice". It was wrong - on this account a Mac instance
    is not the expensive option, it is the only one. Fixed to `mac_mini_m2`.
-   **That fix cannot be tested until it is pushed.** Codemagic clones `origin/main`, so a `codemagic.yaml`
-   change sitting in a local commit changes nothing about what builds. This is the first thing in this project
-   that actually requires a push rather than merely deserving one.
-   **The keystore is therefore still unproven.** Nothing was signed, because nothing was built.
+   That fix could not be tested until it was pushed - Codemagic clones `origin/main`, so a `codemagic.yaml`
+   change sitting in a local commit changes nothing about what builds.
+   **DONE 2026-10-31 after the push (`81682ff..ee34f88`): the `android` workflow is green too.** Build
+   `6ae64816c09f10adde340a86` on `mac_mini_m2`, all 12 steps, about three minutes, one artifact:
+   `app-release.apk`, 3,230,711 bytes. `cap add android` and `scripts/native_setup.py android` both ran on a
+   real machine for the first time and did what they claim.
+   **THE KEYSTORE IS PROVEN - the APK was checked, not the step name.** The artifact was downloaded (size
+   matches the build record) and the signing certificate pulled out of it:
+   `Owner: CN=YARG Remote, O=FatalException, C=US`, `Valid from: Sat Oct 31 15:14:25 EDT 2026 until:
+   Wed Mar 18 15:14:25 EDT 2054`, SHA384withRSA, 2048-bit RSA. That validity window matches the keystore's
+   creation timestamp **to the second**, which is what makes this our key and not merely a key.
+   **App signing certificate SHA-256 (public - it is in every copy of the APK; this is the app's identity for
+   in-place upgrades):**
+   `21:30:D1:A7:49:E4:CC:9C:A8:AD:47:33:C9:70:08:EB:6D:66:F8:FD:44:13:3A:4C:48:55:2B:99:8B:D8:4C:11`
+   **How to check it again, because the obvious tools do not work here.** The APK carries an **APK Signature
+   Scheme v2 signature only** - no v1/JAR signature and no `META-INF/*.RSA`. So `keytool -printcert -jarfile`
+   reports nothing, and `apksigner` is not installed on ENG-1 (no Android SDK). The certificate has to be read
+   out of the APK Signing Block directly: `scripts/`-free helper in the session scratchpad,
+   `extract_apk_cert.py`. One trap in that parsing: the v2 block's value is a length-prefixed **sequence** of
+   length-prefixed signers, so there is one more nesting level than the layout suggests. Skipping it yields a
+   264-byte "certificate" that keytool declines to print without an error, which is how the bug surfaced.
 
 ## Pitfalls other people already paid for (adhd-nagger CLAUDE.md)
 
@@ -182,9 +199,9 @@ In order. Items 1-2 are Apple's side and are Jay's to do; the rest were done by 
 
 ## Still unverified, and open
 
-- ~~The whole pipeline.~~ The iOS half is now proven: Xcode compiled this app, produced an IPA, and Apple
-  accepted it (2026-10-31). **Gradle has still never compiled it** - the `android` workflow is untried and
-  cannot run until the keystore exists.
+- ~~The whole pipeline.~~ **BOTH halves are now proven (2026-10-31).** Xcode compiled this app, produced an
+  IPA and Apple accepted it; Gradle compiled it and produced a release APK signed with our own keystore,
+  verified from the APK's own certificate rather than from a green step.
 - **Nobody has installed the TestFlight build on a phone.** A VALID build at Apple proves the pipeline, not
   the app: the native HTTP stack, the cleartext exception, touch and layout are all still unexercised on a
   device, and so is talking to the game.
