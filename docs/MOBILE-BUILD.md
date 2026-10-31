@@ -48,9 +48,21 @@ project, so it follows adhd-nagger, not ShopStack, for identity.
 
 In order. Items 1-2 are Apple's side and are Jay's to do; the rest were done by hand/API for adhd-nagger.
 
-1. **Apple**: register the bundle id `com.fatalexception.yargremote` (it is already `appId` in
-   `capacitor.config.ts`; adhd-nagger used `com.badassium.*` - a naming decision for Jay) and create the
-   **App Store Connect app record**. `app-store-connect publish` cannot create the record.
+1. **Apple.**
+   - **DONE 2026-10-30: bundle id `com.badassium.yargremote` is registered** (name "YARG Remote", platform
+     Universal, Apple id `8B7253AXDJ`): `POST /v1/bundleIds` returned 201 and a separate read-back confirmed it,
+     using the personal team's App Store Connect key (1Password `nullpointer - App Store Connect API (manager)`,
+     vault Home-Lab). That key's role CAN create identifiers - it was not known beforehand.
+     The id follows the account's convention: personal apps are `com.badassium.*` (adhdnagger, nullpointer), the
+     company app is `com.juniperdesign.*`, nothing used `com.fatalexception.*`. `capacitor.config.ts` and
+     `codemagic.yaml` were changed from `com.fatalexception.yargremote` to match. Read-only discovery first showed
+     neither candidate was registered and that three app records existed, none for this app.
+   - **STILL TO DO, Jay's, in the App Store Connect web UI: create the app record.** Apple has no API for it.
+     Apps -> "+" -> New App; platform iOS; a name ("YARG Remote" must be unique across the App Store - Apple says
+     so at once if taken; any name works for TestFlight); primary language; the bundle id above (it appears in
+     the dropdown now); a SKU (free text and permanent, e.g. `yarg-remote-1`). Leave the store page empty -
+     TestFlight needs only the record. NOTE: YARG is YARC's trademark; irrelevant for TestFlight, not for a
+     public release.
 2. **Codemagic app** in Jay's personal account on the **generic git provider**, `settingsSource=file`,
    cloning GitLab project **57** (`fatalexception/yarg-remote`) with a **read-only GitLab deploy token**
    (adhd-nagger: project 64, token in 1Password `ADHD Nagger Codemagic Deploy Token`). Needs the 1Password

@@ -22,7 +22,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 // a network-security-config on Android. Those are applied after `cap add`; see
 // README.md, "Native setup".
 const config: CapacitorConfig = {
-  appId: "com.fatalexception.yargremote",
+  appId: "com.badassium.yargremote",
   appName: "YARG Remote",
   webDir: "dist",
   plugins: {

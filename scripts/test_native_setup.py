@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import native_setup as ns  # noqa: E402
 
 MINIMAL_PLIST = {
-    "CFBundleIdentifier": "com.fatalexception.yargremote",
+    "CFBundleIdentifier": "com.badassium.yargremote",
     "CFBundleName": "YARG Remote",
     "UILaunchStoryboardName": "LaunchScreen",
 }

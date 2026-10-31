@@ -61,7 +61,7 @@ workflows:
       groups:
         - yargremote_signing
       vars:
-        BUNDLE_ID: "com.fatalexception.yargremote"
+        BUNDLE_ID: "com.badassium.yargremote"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
       node: 22
