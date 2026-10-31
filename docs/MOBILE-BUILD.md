@@ -3,11 +3,18 @@
 Written 2026-10-30, mid-task, so the reasoning survives a compaction. It said "nothing in here has been run
 on Codemagic" until 2026-10-31, when it was.
 
-**STATUS 2026-10-31: the iOS pipeline WORKS end to end and TestFlight has a build.** `ios-testflight` ran
-green on its first attempt (build `6ae63b08f61b13a16adad68e`, all 19 steps) and App Store Connect confirms
-build `1793473364`, `processingState=VALID`, not expired, minOS 15.0 - checked against Apple's own API, not
-inferred from Codemagic's green upload step. **The `android` workflow has still never run**: it needs the
-keystore half of the variable group, which does not exist.
+**STATUS 2026-10-31: BOTH pipelines work end to end, and pushes to `main` now build by themselves.**
+`ios-testflight` ran green on its first attempt (build `6ae63b08f61b13a16adad68e`, all 19 steps) and App
+Store Connect confirms build `1793473364`, `processingState=VALID`, not expired, minOS 15.0 - checked
+against Apple's own API, not inferred from Codemagic's green upload step. The `android` workflow then ran
+green too (build `6ae64816c09f10adde340a86`) and produced `app-release.apk`, 3,230,711 bytes, signed with
+our own keystore - verified by parsing the APK's v2 signing block, not by trusting the step. **GitLab hook
+52 now fires Codemagic on every push, tag push and merge request**, so from here a push costs build minutes
+on both workflows and ships to TestFlight unless the changeset filter skips it.
+
+This paragraph was wrong for part of the day: it claimed the Android workflow had never run, hours after it
+had. A status line at the top of a file is read far more often than the step it summarises, so it is the
+first thing to update, not the last.
 
 ## The instruction, and what it settled
 
@@ -142,9 +149,23 @@ In order. Items 1-2 are Apple's side and are Jay's to do; the rest were done by 
      **If it is ever needed again:** `op document get "YARG Remote Android Keystore (jks)" --vault Home-Lab
      --out-file <path>`. Do not commit a `.jks` or that password, ever.
 4. **GitLab webhook** on project 57 -> `https://api.codemagic.io/hooks/<app id>` (push, tag push, merge
-   request; SSL verification on). Needs the api-scoped token in 1Password `GitLab-CE (Personal)`.
-   adhd-nagger's is hook 51. **Until it exists a push builds nothing; once it exists every push to main
-   spends build minutes on both workflows** (the changeset filter skips docs-only pushes).
+   request; SSL verification on). adhd-nagger's is hook 51. **Until it exists a push builds nothing; once it
+   exists every push to main spends build minutes on both workflows** (the changeset filter skips docs-only
+   pushes).
+   **DONE 2026-10-31. Hook 52**, created by `POST /projects/57/hooks` and read back: url
+   `https://api.codemagic.io/hooks/6ae62d7b737e54b5b3f6b3bc`, push / tag push / merge request on,
+   SSL verification on, pipeline and issue events off. A follow-up `GET /projects/57/hooks` confirms the
+   project holds **exactly one** hook. The numeric id **57 is now measured**, not assumed, and the project's
+   `default_branch` is `main`.
+   **`GitLab-CE (Personal)` is NOT the credential for this.** Its password field is a 10-character password,
+   not an API token, and using it returns 401. This step needed a token that did not exist yet: a **project
+   access token**, `yarg-remote-api`, Maintainer, **`api` scope only**, expires 2027-10-30, created by Jay in
+   the UI. It is in 1Password Home-Lab as **`YARG Remote GitLab API Token`** (field `credential`), and it can
+   reach this one project and nothing else - which a personal PAT could not have said.
+   Two things worth keeping about the token itself. It is **51 characters and contains dots**: GitLab's
+   routable token format (17.7+) separates fields with `.`, so a validator written as
+   `^glpat-[A-Za-z0-9_-]+$` rejects a perfectly good token - mine did, once. And the write was verified by
+   **hash, not exit code**: 51 chars / sha256 `0d07ad30d980` going in, the same two numbers read back out.
 5. First build: trigger through the API, expect to iterate.
    **DONE 2026-10-31, and it did NOT need iterating.** `POST https://api.codemagic.io/builds` with
    `{"appId":"6ae62d7b737e54b5b3f6b3bc","workflowId":"ios-testflight","branch":"main"}` and the `x-auth-token`
@@ -202,6 +223,11 @@ In order. Items 1-2 are Apple's side and are Jay's to do; the rest were done by 
 - ~~The whole pipeline.~~ **BOTH halves are now proven (2026-10-31).** Xcode compiled this app, produced an
   IPA and Apple accepted it; Gradle compiled it and produced a release APK signed with our own keystore,
   verified from the APK's own certificate rather than from a green step.
+- **No push has yet gone through hook 52.** It was created and read back from GitLab's own API, so the hook
+  is as configured; what is untested is the end of the wire - that Codemagic accepts the delivery and starts
+  a build. The next push to `main` is the test, and it is not a free one: it spends minutes on both workflows
+  and uploads to TestFlight. GitLab records every delivery and its response under the project's Webhooks
+  page, which is where to look if a push seems to build nothing.
 - **Nobody has installed the TestFlight build on a phone.** A VALID build at Apple proves the pipeline, not
   the app: the native HTTP stack, the cleartext exception, touch and layout are all still unexercised on a
   device, and so is talking to the game.
