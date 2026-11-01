@@ -46,6 +46,12 @@ workflows:
       # TestFlight build. A "skipped" build still starts and stops at "Fetching app sources", so
       # skipped runs appear in the build list (adhd-nagger measured this). codemagic.yaml itself is
       # always in the changeset. The FIRST build after adding this runs regardless.
+      #
+      # `scripts/` IS a build input: scripts/native_setup.py shapes the native project and the
+      # workflows below run it and its tests. So anything in there triggers a real build, which
+      # is correct and is also a trap - on 2026-10-31 four App Store Connect helpers were added
+      # to scripts/ and a documentation push built and shipped to TestFlight. Tooling that talks
+      # to Apple or GitLab from a workstation lives in `tools/`, which is deliberately NOT here.
       changeset:
         includes:
           - 'src/'

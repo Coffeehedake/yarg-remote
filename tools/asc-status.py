@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Read-only App Store Connect status for YARG Remote: builds, TestFlight state, groups, testers.
 
-    C:\\dev\\adhd-nagger\\server\\.venv\\Scripts\\python.exe scripts\\asc-status.py
+    C:\\dev\\adhd-nagger\\server\\.venv\\Scripts\\python.exe tools\\asc-status.py
 
 Needs `op` enabled in the shell first:
 

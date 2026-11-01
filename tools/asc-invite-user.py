@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Invite a person to the App Store Connect team so they can be an INTERNAL TestFlight tester.
 
-    C:\\dev\\adhd-nagger\\server\\.venv\\Scripts\\python.exe scripts\\asc-invite-user.py
+    C:\\dev\\adhd-nagger\\server\\.venv\\Scripts\\python.exe tools\\asc-invite-user.py
 
 Needs `op` enabled first:  . C:\\dev\\_environment\\enable-headless-op.ps1
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Put the App Store Connect USERS into the internal TestFlight group.
 
-    C:\\dev\\adhd-nagger\\server\\.venv\\Scripts\\python.exe scripts\\asc-add-internal.py
+    C:\\dev\\adhd-nagger\\server\\.venv\\Scripts\\python.exe tools\\asc-add-internal.py
 
 Needs `op` enabled first:  . C:\\dev\\_environment\\enable-headless-op.ps1
 

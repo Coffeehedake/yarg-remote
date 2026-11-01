@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Create TestFlight groups and attach testers for YARG Remote. WRITES to App Store Connect.
 
-    C:\\dev\\adhd-nagger\\server\\.venv\\Scripts\\python.exe scripts\\asc-testflight-setup.py
+    C:\\dev\\adhd-nagger\\server\\.venv\\Scripts\\python.exe tools\\asc-testflight-setup.py
 
 Needs `op` enabled first:  . C:\\dev\\_environment\\enable-headless-op.ps1
 
