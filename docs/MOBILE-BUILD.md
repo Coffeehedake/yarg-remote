@@ -422,11 +422,24 @@ app-store-connect publish
   --max-find-build-wait 15
 ```
 
+**Verified by the push that made the change.** Adding `codemagic.yaml` to the changeset filter
+meant that commit built itself, and the build it produced arrived in the group with nobody
+touching App Store Connect:
+
+```
+builds the Internal group can install: 4
+   1793769714  VALID  uploaded=2026-11-03T21:24:36-08:00   <- arrived by itself
+   1793768919  VALID  uploaded=2026-11-03T21:11:32-08:00   <- added by hand, before the fix
+   1793484505  VALID  uploaded=2026-10-31T15:11:02-07:00
+   1793473364  VALID  uploaded=2026-10-31T12:05:13-07:00
+```
+
 Two consequences worth knowing before the next build:
 
-- **It is slower.** Adding a build to a group means waiting for Apple to list it, which the bare
-  upload never did. The workflow was about three minutes; expect several more.
-  `--max-find-build-wait` bounds the wait instead of letting the workflow hang.
+- **It is slower, and now measured rather than guessed: 204s before, 511s after.** Adding a
+  build to a group means waiting for Apple to list it, which the bare upload never did.
+  `--max-find-build-wait` bounds the wait instead of letting the workflow hang. Worth it: the
+  step going green now means installable rather than merely uploaded.
 - **`codemagic.yaml` is now in the changeset filter.** It was not, so a change to how builds are
   made, signed or distributed would never have been exercised — this fix would have sat unproven
   until some unrelated `src/` change happened along.
