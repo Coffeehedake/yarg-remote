@@ -314,3 +314,35 @@ also unattractive on its own terms: every field it needs is empty - no `betaAppL
 all, and `betaAppReviewDetail` has null contact first name, last name, phone and email - and a
 reviewer cannot exercise an app whose whole purpose is talking to a PC running YARG on the same
 LAN, so it would need explanatory notes or a demo video.
+
+### The invite loop was the wrong Apple ID, and two instruments lied on the way
+
+Justin got the resent invitation, clicked it, signed in successfully, and landed back on the
+login page. Endlessly.
+
+**His Apple ID is not the address he was invited at.** The invitation was bound to
+`justin.alan.burgess@gmail.com`; his Apple ID is a different address entirely. App Store Connect
+authenticated him perfectly well, found no pending invitation for the account he had
+authenticated *as*, and bounced him to login — with no error, because from Apple's side nothing
+went wrong. Inviting his actual Apple ID fixed it.
+
+**The symptom does not distinguish that from the other common cause**, which is an Apple ID
+without two-factor authentication: App Store Connect requires 2FA, and an account lacking it also
+signs in and loops with no error. The test that separates them takes a minute — sign in to
+`appleid.apple.com` with the invited address. If it is not an Apple ID at all, it is the first
+cause; if it signs in, check Sign-In and Security for 2FA. Worth doing on a computer rather than
+a phone: the invite is a web account invitation, not a TestFlight link, and on iOS it bounces
+between Safari and the App Store.
+
+Two instrument failures while fixing it, both of the shape this project keeps meeting:
+
+- **`POST /userInvitations` returned 201 and the list read back EMPTY.** The script reported "the
+  send did not stick" and it had. Apple's `GET /userInvitations` lagged its own write by under a
+  minute. This is the same family as the note in `WORKSPACE.md` about `git ls-remote` versus the
+  GitHub REST API, where the repository record had not caught up with a push that had landed:
+  **a read immediately after a write measures the read's freshness, not the write.** Retry before
+  concluding, or verify from the resource the write returned.
+- **A diagnostic script filtered invitations on `"justin" in email`.** The new address is
+  `stewierulesoverbrian@gmail.com`, which contains no "justin", so the listing showed one
+  invitation where there were two and appeared to confirm the false alarm above. A filter chosen
+  from what the data looked like yesterday.
