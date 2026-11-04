@@ -76,7 +76,45 @@ Written down rather than implied by a passing build:
 
 - **Nothing has been built for a device.** No `cap add` has been run; iOS and Android are untested,
   and the cleartext exceptions above are documented rather than applied.
-- **The two-queue routing** (setlist vs running show vs pending) is unexercised end to end. It is
-  also unexercised on the game side — batchmode has no menu scene and no song library, so every
-  hash the contract test sends is deliberately unknown. "A queued song appears in the setlist" is
-  inference on both ends of the wire.
+- **The two-queue routing** (setlist vs running show vs pending) is only PARTLY exercised. See
+  below: the `pending` target was driven against a real game on 2026-11-03; the setlist and
+  running-show targets were not.
+- **The phone app itself has still never driven this.** What was tested is the HTTP surface the
+  app speaks, driven with `curl`. That is the same contract and it is not the same thing as the
+  app: nothing has exercised `yarg-remote`'s own request building, its error handling, or
+  `src/types.ts` against a live listener.
+
+## What the remote queue DID do against a running game — measured 2026-11-03
+
+The first time this has been driven against a real windowed game with a real library, rather
+than batchmode where "every hash the contract test sends is deliberately unknown". It matters
+because `RemoteQueueBridge` was **ported onto `Setlist`** during the 2026-11-02 upstream merge —
+the type it depended on was replaced underneath it — and until now only `SetlistGuardProbe`'s
+pure decision functions had been measured.
+
+```
+GET  /api/library            4,080 songs offered, 100 per page
+GET  /api/queue              {"playing_show":false,"index":0,"target":"pending","songs":[]}
+POST /api/queue  (no header) 403            <- the X-Yarg-Remote guard, seen refusing
+POST /api/queue  x2          200 {"queued":true,...,"target":"pending"}
+GET  /api/queue              both songs, with name/artist/album/charter/length_ms/score
+POST /api/queue?action=up    409 "waiting for the music library screen to be opened"
+POST /api/queue  bad hash    404 "no song with that hash"
+DELETE /api/queue?hash=…     200 {"removed":true,...}, and the queue kept only the other song
+GET  /api/board              200
+```
+
+**Zero exceptions in the game log for the whole run.** A queued song appearing in the queue with
+its metadata is now a measurement rather than an inference.
+
+Two things that are still not:
+
+- **Reorder.** It answers 409 until the music library screen is open on the game, which is the
+  documented behaviour and not a fault — but it means `Move` has never been seen to succeed.
+  Finish it by opening the music library in the game and re-running the `action=up` call.
+- **The other two targets.** Everything above landed in `pending` because no show was running
+  and no setlist was open. `target` is the field to watch.
+
+One trap for whoever writes the next test: **the hashes come back UPPERCASE.** A `[a-f0-9]{40}`
+pattern matches nothing, and the symptom is the server answering `400 "a 'hash' is required"` to
+every mutating call, which reads as a broken request body rather than a broken regex.
