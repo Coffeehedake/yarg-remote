@@ -346,3 +346,33 @@ Two instrument failures while fixing it, both of the shape this project keeps me
   `stewierulesoverbrian@gmail.com`, which contains no "justin", so the listing showed one
   invitation where there were two and appeared to confirm the false alarm above. A filter chosen
   from what the data looked like yesterday.
+
+### There are TWO invitations, and accepting the first one shows nothing
+
+Justin accepted the App Store Connect invitation, opened TestFlight, and found an empty screen
+offering to "Redeem a code". Nothing was wrong; he was one step from the end and the screen in
+front of him was the step.
+
+**The account invitation and the tester invitation are separate.** The first makes someone a team
+member — that is `POST /userInvitations`, and accepting it is what lets them into App Store
+Connect. The second attaches an app to their TestFlight — that is
+`POST /betaTesterInvitations` with `app` and `betaTester` relationships, and until it is redeemed
+TestFlight has nothing to show, because opening TestFlight does not pull anything in.
+
+The field that says which state somebody is in is on the group's tester list:
+
+```
+state=INVITED     the account is set up and TestFlight has nothing      <- Justin, before
+state=INSTALLED   redeemed, the app is on the phone                     <- Justin, after
+```
+
+So when a tester says "TestFlight is empty", read `state` before anything else. `INVITED` means
+send or resend `betaTesterInvitations`; the mail carries a redeem code that works in exactly the
+box they are already looking at. Apple's TestFlight mail lands in spam often enough to be worth
+saying out loud.
+
+**And do not read anything into `/betaTesters/{id}/builds`.** It reported `builds=0` for Justin,
+which looked like a smoking gun — and the control showed `builds=0` for the two testers who had
+the app installed and working. Another relationship that answers nothing from that direction,
+the same as `/builds/{id}/betaGroups` above. **Control every "zero" against a case known to be
+good before reporting it**, or the instrument writes the diagnosis.
