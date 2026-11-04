@@ -63,6 +63,11 @@ workflows:
           - 'vite.config.ts'
           - 'tsconfig.json'
           - 'assets/'
+          # The pipeline definition is a build input too. Without this a change to how builds are
+          # made, signed or distributed never gets exercised - which is exactly what would have
+          # happened to the --beta-group fix above, sitting unproven until some unrelated src
+          # change happened along.
+          - 'codemagic.yaml'
     environment:
       groups:
         - yargremote_signing
@@ -129,10 +134,28 @@ workflows:
         script: xcode-project build-ipa --workspace "$XCODE_WORKSPACE" --scheme "$XCODE_SCHEME"
 
       - name: Upload to App Store Connect (TestFlight)
-        # Internal testers get every build on upload alone. A green step is NOT proof Apple has the
-        # build (adhd-nagger's rule): verify from App Store Connect, and allow ~5 minutes for Apple
-        # to list it after upload.
-        script: app-store-connect publish --path "build/ios/ipa/*.ipa"
+        # "Internal testers get every build on upload alone" is what this comment used to say, and
+        # it is FALSE. Measured 2026-11-04: build 1793768919 uploaded, processingState VALID, and
+        # the `Internal` group still held only the two builds from 31 October - because the group
+        # has hasAccessToAllBuilds=false and nothing here added the new one. The pipeline was
+        # green, Apple had the IPA, and every tester kept seeing the previous version with no
+        # error on any screen anyone would think to check.
+        #
+        # --beta-group closes that. It is repeatable; one group today.
+        #
+        # It makes this step WAIT for Apple to list the build, which the bare upload did not - so
+        # the workflow is minutes longer than the ~3 it used to take. That is the cost of the
+        # build being installable when the step goes green instead of merely uploaded.
+        # --max-find-build-wait bounds it rather than letting the workflow hang.
+        #
+        # Still true, and still the rule: a green step is NOT proof Apple has the build. Verify
+        # from App Store Connect, and now also verify the GROUP holds it -
+        # GET /betaGroups/{id}/builds, never /builds/{id}/betaGroups, which reports nothing.
+        script: >
+          app-store-connect publish
+          --path "build/ios/ipa/*.ipa"
+          --beta-group "Internal"
+          --max-find-build-wait 15
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log

@@ -412,5 +412,21 @@ GET  /betaGroups/{gid}/builds                 # 204 means accepted, not done
 `scripts`-adjacent helper used for this lives in the session scratchpad rather than the repo; the
 three calls above are the whole of it.
 
-**Worth automating in `codemagic.yaml`** so a build nobody added is not the normal case, since
-the failure is invisible from every screen a person would think to look at.
+**Automated the same night.** The publish step now carries `--beta-group "Internal"`, which is a
+documented, repeatable option of `app-store-connect publish` rather than a script of ours:
+
+```yaml
+app-store-connect publish
+  --path "build/ios/ipa/*.ipa"
+  --beta-group "Internal"
+  --max-find-build-wait 15
+```
+
+Two consequences worth knowing before the next build:
+
+- **It is slower.** Adding a build to a group means waiting for Apple to list it, which the bare
+  upload never did. The workflow was about three minutes; expect several more.
+  `--max-find-build-wait` bounds the wait instead of letting the workflow hang.
+- **`codemagic.yaml` is now in the changeset filter.** It was not, so a change to how builds are
+  made, signed or distributed would never have been exercised — this fix would have sat unproven
+  until some unrelated `src/` change happened along.
