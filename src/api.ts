@@ -88,8 +88,31 @@ export class YargClient {
     return (await response.text()).trim();
   }
 
-  search(query: string, limit = 100): Promise<LibraryResult> {
-    const params = new URLSearchParams({ q: query, limit: String(limit) });
+  /**
+   * One page of the library.
+   *
+   * Paged because the library is bigger than any single answer: 4,085 songs against a server
+   * that will not send more than 500 at a time. The caller walks it with `offset` until it has
+   * `matched` of them.
+   *
+   * `sort` is omitted rather than defaulted here - the server then uses whatever sort the game
+   * itself is showing, which is a better default than anything this file could pick, and it
+   * says which one it used.
+   */
+  search(
+    query: string,
+    limit = 100,
+    offset = 0,
+    sort?: string,
+  ): Promise<LibraryResult> {
+    const params = new URLSearchParams({
+      q: query,
+      limit: String(limit),
+      offset: String(offset),
+    });
+    if (sort) {
+      params.set("sort", sort);
+    }
     return this.json<LibraryResult>("GET", `/api/library?${params}`);
   }
 

@@ -56,6 +56,42 @@ describe("request shape", () => {
     for (const call of calls) expect(headerOf(call, MARK_HEADER)).toBe("1");
   });
 
+  // The library is 4,085 songs and the server sends at most 500, so a phone that cannot ask for
+  // a later page simply cannot see most of it. These assert the three parameters that make
+  // walking it possible, because a dropped one fails SILENTLY: the first page is always right,
+  // and the list just stops early.
+  it("asks for a page, not just the first answer", async () => {
+    const { calls, fetchImpl } = stub({
+      payload: { songs: [], total: 0, matched: 0, shown: 0, offset: 0, query: "", sort: "Name", sorts: [] },
+    });
+    const client = new YargClient("http://console:8099", { fetchImpl });
+
+    await client.search("green", 50, 150, "Artist");
+
+    const url = new URL(calls[0].url);
+    expect(url.pathname).toBe("/api/library");
+    expect(url.searchParams.get("q")).toBe("green");
+    expect(url.searchParams.get("limit")).toBe("50");
+    expect(url.searchParams.get("offset")).toBe("150");
+    expect(url.searchParams.get("sort")).toBe("Artist");
+  });
+
+  // Omitted rather than defaulted here: with no sort the server uses whatever the game itself is
+  // showing, which is a better default than anything this file could choose. Sending an empty
+  // sort= would be a different request, and the server would have to decide what it meant.
+  it("omits the sort entirely when none is given", async () => {
+    const { calls, fetchImpl } = stub({
+      payload: { songs: [], total: 0, matched: 0, shown: 0, offset: 0, query: "", sort: "Name", sorts: [] },
+    });
+    const client = new YargClient("http://console:8099", { fetchImpl });
+
+    await client.search("x");
+
+    const url = new URL(calls[0].url);
+    expect(url.searchParams.has("sort")).toBe(false);
+    expect(url.searchParams.get("offset")).toBe("0");
+  });
+
   it("strips a trailing slash rather than doubling it", async () => {
     const { calls, fetchImpl } = stub();
     await new YargClient("http://console:8099/", { fetchImpl }).queue();

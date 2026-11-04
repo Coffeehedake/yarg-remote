@@ -317,3 +317,38 @@ button.act[disabled] {
   border-color: var(--err);
   color: var(--err);
 }
+
+/* The sort picker and the headings it produces.
+   The headings are the game's own - "A", "Metallica", "2016" - and they are deliberately quiet:
+   they orient, they are not content. */
+.sortPick {
+  display: block;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.sortPick select {
+  margin-left: 0.35rem;
+  min-height: 2.2rem;
+}
+
+.group {
+  position: sticky;
+  top: 0;
+  padding: 0.35rem 0.1rem;
+  margin-top: 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  background: inherit;
+}
+
+/* Full width, because it is the end of the list rather than a per-row action. */
+.act.more {
+  display: block;
+  width: 100%;
+  margin: 0.75rem 0 0.25rem;
+}

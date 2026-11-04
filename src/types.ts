@@ -19,6 +19,14 @@ export interface RemoteSong {
   length_ms: number;
   /** Net votes, when this song is in the queue. */
   score: number;
+  /**
+   * The heading this song sits under in the current sort - "A", "Metallica", "2016".
+   *
+   * Absent for the queue and for suggestions, where a song has no sort to sit in. The game's
+   * library groups songs under headings rather than showing one flat list, and a phone with the
+   * same ORDER but no HEADINGS is a different list that happens to agree.
+   */
+  category?: string;
 }
 
 /**
@@ -80,13 +88,38 @@ export interface RemoteBoard {
 }
 
 /** GET /api/library?q=&limit= */
+export interface RemoteSortOption {
+  /** The wire value, e.g. "Artist_Album". Case-insensitive on the way back in. */
+  name: string;
+  /** What the game calls it on screen, localised by the game. */
+  label: string;
+}
+
+/**
+ * One page of the library.
+ *
+ * `total` and `matched` are different numbers and the UI needs both: the first is how many songs
+ * the game has, the second how many this query matches. Knowing only `total` a client cannot
+ * tell when a filtered list has ended, and will either stop early or keep asking for pages that
+ * are not there.
+ *
+ * The sorts come down with every page rather than being listed in this file. They are the game's
+ * own cycle, labels included, so the phone cannot offer a sort the game lacks or miss one it has
+ * - the same reason the rest of this file is a transcription rather than a design.
+ */
 export interface LibraryResult {
   query: string;
-  /** Songs in the whole library, not in this result. */
+  /** The sort actually used - not necessarily the one asked for. */
+  sort: string;
+  /** Songs in the whole library. */
   total: number;
-  /** Songs in this result - `total` clamped by `limit`. */
+  /** Songs matching `query`, across every page. */
+  matched: number;
+  offset: number;
+  /** Songs on this page. Fewer than asked for means the end. */
   shown: number;
   songs: RemoteSong[];
+  sorts: RemoteSortOption[];
 }
 
 /** POST /api/queue */

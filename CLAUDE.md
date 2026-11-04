@@ -109,11 +109,45 @@ its metadata is now a measurement rather than an inference.
 
 Two things that are still not:
 
-- **Reorder.** It answers 409 until the music library screen is open on the game, which is the
-  documented behaviour and not a fault — but it means `Move` has never been seen to succeed.
-  Finish it by opening the music library in the game and re-running the `action=up` call.
-- **The other two targets.** Everything above landed in `pending` because no show was running
-  and no setlist was open. `target` is the field to watch.
+- ~~**Reorder.** `Move` has never been seen to succeed.~~ **Done, 2026-11-04.** With the music
+  library screen open the queue's `target` becomes `setlist` and it moves:
+  `{"moved":true,...}`, and the list order actually changed. The 409 is purely about which
+  screen the game is on.
+- **The running-show target.** `pending` and `setlist` have both now been seen; `show` has not,
+  because that needs a show actually playing. `target` is the field to watch.
+
+## Sorting: the app offers what the menu offers — added 2026-11-04
+
+`/api/library` takes `sort`, `offset` and `limit`, and answers with the sorts on offer.
+
+**The app holds no list of sorts.** They arrive with every page, derived on the game side from
+`MusicLibraryMenu.NextSort`'s own cycle — `Name` up to `Random`, skipping `Playable` — so the
+phone cannot offer a sort the menu lacks or miss one it has. Each carries the game's **own
+localized label**, which matters more than it sounds: the game calls `Name` **"Song"** and
+`SongLength` **"Duration"**. An app inventing its own labels would have shown the wrong words.
+
+```
+17 options: Name Artist Album Artist_Album Genre Subgenre Year Charter Folder
+            Source SongLength DateAdded Playcount Stars Percentage Score Random
+labels:     Song Artist Album "Artist - Album" Genre Subgenre Year Charter Folder
+            Source Duration "Date Added" "Play Count" Stars Percentage Score Random
+```
+
+Asking for no sort is the right default: the server then uses whatever the game is showing, and
+says which in `sort`. An unrecognised sort falls back the same way rather than failing.
+
+**The 500-song ceiling is gone.** The endpoint used to answer with the first `limit` matches and
+nothing else, so a phone could not see most of a 4,085-song library — and sorting on the phone
+would only ever have ordered whatever arrived. Measured after the change: **4,080 songs walked in
+9 pages.**
+
+`matched` and `total` are different numbers and the UI needs both — the first is how many match
+the query, the second how many songs exist. Knowing only `total`, a client cannot tell when a
+filtered list has ended.
+
+Songs carry the `category` they sit under so the phone can group its list the way the game groups
+its own. One song can appear under two headings — the Folder sort lists it in every playlist it
+belongs to, exactly as the game does — so React keys need the index, not just the hash.
 
 One trap for whoever writes the next test: **the hashes come back UPPERCASE.** A `[a-f0-9]{40}`
 pattern matches nothing, and the symptom is the server answering `400 "a 'hash' is required"` to
