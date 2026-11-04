@@ -246,3 +246,71 @@ In order. Items 1-2 are Apple's side and are Jay's to do; the rest were done by 
 - Whether the app works on a real phone at all: the native HTTP stack, the cleartext exceptions, touch
   and layout. Everything so far is the web layer driven in a browser against the real game.
 - The game must be set to **LAN** for a phone to reach it; the game now shows the address to type.
+
+## TestFlight distribution: two API traps, measured 2026-11-03
+
+Justin installed TestFlight and could not open the link he had been sent. Diagnosing it hit two
+App Store Connect API behaviours that both produce confident wrong answers.
+
+### `/builds/{id}/betaGroups` returns an empty list even when a group holds the build
+
+Asked from the build's side, both builds reported **no groups**. That was written up as
+"distribution was never set up, nobody can install anything" and reported as the cause. Asked
+from the group's side a few minutes later:
+
+```
+'Internal' INTERNAL: 2 build(s)   1793484505 VALID, 1793473364 VALID
+'Friends'  EXTERNAL: 2 build(s)   1793484505 VALID, 1793473364 VALID
+```
+
+Both groups held both builds the whole time, including the external group nothing had written to.
+**Ask `GET /betaGroups/{id}/builds`, never `GET /builds/{id}/betaGroups`.** The reverse direction
+is not a view of the same relationship.
+
+The same mistake also made a write look necessary: a `POST` to
+`/betaGroups/{id}/relationships/builds` returned **HTTP 204** for a build that was already there,
+so "WROTE: build assigned" appeared in the log for a no-op. A 204 means Apple accepted the
+request, not that anything changed - this project's own rule is to verify a write by reading the
+state back, and that is the only reason the first version of this note was caught being wrong.
+
+### An invitation's EXISTENCE is not its validity, and it blocks re-inviting
+
+`GET /userInvitations` lists **expired** invitations with no flag saying so - only an
+`expirationDate` to compare against the clock yourself. Justin's had expired three hours and
+twenty minutes before anyone looked:
+
+```
+expires=2026-11-03T15:18:19.566-08:00   (checked at 2026-11-04T02:39Z - EXPIRED by 3h20m)
+```
+
+That is the whole of his problem. He had been invited, the seven-day window closed, and the link
+he kept clicking was dead. A script that only asked "does an invitation exist for this email"
+answered yes and declined to re-send - which is the instrument agreeing with the defect.
+
+And it cannot be repaired through this API key:
+
+| action | result |
+|---|---|
+| `DELETE /userInvitations/{id}` | **403** - user management needs Admin; this key is App Manager |
+| `POST /userInvitations` | **409** `ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE`, "The email is already being used" |
+
+The dead invitation holds the address, and the key may not remove it. **Resending an expired
+invitation is a web-UI job:** App Store Connect -> Users and Access -> the pending invitation ->
+Resend, or remove it and invite again. Role `MARKETING` is the least privileged one Apple accepts
+for an internal tester (no code, no certificates, no build management); pair it with
+`allAppsVisible: false` and a `visibleApps` relationship pinned to this app.
+
+### The order the records have to be in
+
+An internal tester needs all of these, and each is a separate resource that can be fine while
+another is not:
+
+1. the person is a **team member** (accepted invitation - the step above)
+2. they are a **beta tester in an INTERNAL group** (Justin is only in the external `Friends`)
+3. the **group holds a build** (both groups already do)
+
+Internal testers never wait for Beta App Review. External ones do, and for this app that route is
+also unattractive on its own terms: every field it needs is empty - no `betaAppLocalizations` at
+all, and `betaAppReviewDetail` has null contact first name, last name, phone and email - and a
+reviewer cannot exercise an app whose whole purpose is talking to a PC running YARG on the same
+LAN, so it would need explanatory notes or a demo video.
