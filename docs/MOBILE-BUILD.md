@@ -376,3 +376,41 @@ which looked like a smoking gun — and the control showed `builds=0` for the tw
 the app installed and working. Another relationship that answers nothing from that direction,
 the same as `/builds/{id}/betaGroups` above. **Control every "zero" against a case known to be
 good before reporting it**, or the instrument writes the diagnosis.
+
+### Uploading is not distributing — measured 2026-11-04
+
+The webhook works. A push to `main` with real `src/` changes started a build within seconds,
+finished in about three minutes, and Apple had the IPA:
+
+```
+6aeabd7a…64d  finished  main  1a7bce84
+build 1793768919  VALID  uploaded=2026-11-03T21:11:32-08:00
+```
+
+Docs-only commits were **skipped** by the changeset filter, correctly — three of them that
+evening never built.
+
+**And the build was not installable by anyone.** The `Internal` group still held only the two
+31 October builds, because the group has `hasAccessToAllBuilds=false` and nothing in the pipeline
+adds a build to it. The upload step's own comment already warns that a green step is not proof
+Apple has the build; this is the next link in that chain, and it fails the same quiet way — the
+pipeline is green, Apple has the IPA, `processingState` is `VALID`, and TestFlight shows the
+tester the *old* version with no error anywhere.
+
+(How the October builds got into the group is not known — nothing in `codemagic.yaml` does it, so
+it was done by hand at some point. The useful fact is that it does not happen by itself.)
+
+So after any build that someone is waiting on:
+
+```python
+# ask the GROUP, never /builds/{id}/betaGroups - that direction reports nothing
+GET  /betaGroups/{gid}/builds
+POST /betaGroups/{gid}/relationships/builds   {"data":[{"type":"builds","id":"<build id>"}]}
+GET  /betaGroups/{gid}/builds                 # 204 means accepted, not done
+```
+
+`scripts`-adjacent helper used for this lives in the session scratchpad rather than the repo; the
+three calls above are the whole of it.
+
+**Worth automating in `codemagic.yaml`** so a build nobody added is not the normal case, since
+the failure is invisible from every screen a person would think to look at.
